@@ -1,14 +1,16 @@
 from fastapi import FastAPI
+from app.core.config import settings
 
 app = FastAPI(
-    title="TeamFlow API",
-    description="A simple FastAPI application",
-    version="1.0.0"
+    title=settings.PROJECT_NAME,
+    debug=settings.DEBUG,
 )
+
 
 @app.get("/")
 def root():
-    return {"message": "welcome to TeamFlow API!"}
+    return {"message": f"Welcome to {settings.PROJECT_NAME}"}
+
 
 @app.get("/health")
 def health_check():
