@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.api.user import router as user_router
 from app.api.auth import router as auth_router
+from app.api.workspace import router as workspace_router
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -9,6 +11,7 @@ app = FastAPI(
 )
 app.include_router(auth_router)
 app.include_router(user_router)
+app.include_router(workspace_router)
 
 
 @app.get("/")
