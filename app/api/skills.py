@@ -1,0 +1,87 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
+from app.schemas.skill_schema import SkillCreate, SkillUpdate, SkillResponse
+from app.services.skill_service import (
+    get_all_skills,
+    get_skill_by_id,
+    get_skill_by_name,
+    create_skill,
+    update_skill,
+    delete_skill,
+)
+
+router = APIRouter(prefix="/skills", tags=["Skills"])
+
+
+@router.get("/", response_model=list[SkillResponse])
+def read_skills(db: Session = Depends(get_db)):
+    return get_all_skills(db)
+
+
+@router.get("/{skill_id}", response_model=SkillResponse)
+def read_skill(skill_id: int, db: Session = Depends(get_db)):
+    skill = get_skill_by_id(db, skill_id)
+
+    if not skill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Skill not found"
+        )
+
+    return skill
+
+
+@router.post("/", response_model=SkillResponse, status_code=status.HTTP_201_CREATED)
+def create_new_skill(skill: SkillCreate, db: Session = Depends(get_db)):
+    existing_skill = get_skill_by_name(db, skill.name)
+
+    if existing_skill:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Skill already exists"
+        )
+
+    return create_skill(db, skill)
+
+
+@router.put("/{skill_id}", response_model=SkillResponse)
+def update_existing_skill(
+    skill_id: int,
+    skill_data: SkillUpdate,
+    db: Session = Depends(get_db)
+):
+    skill = get_skill_by_id(db, skill_id)
+
+    if not skill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Skill not found"
+        )
+
+    if skill_data.name is not None:
+        existing_skill = get_skill_by_name(db, skill_data.name)
+
+        if existing_skill and existing_skill.id != skill_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Another skill with this name already exists"
+            )
+
+    return update_skill(db, skill, skill_data)
+
+
+@router.delete("/{skill_id}")
+def delete_existing_skill(skill_id: int, db: Session = Depends(get_db)):
+    skill = get_skill_by_id(db, skill_id)
+
+    if not skill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Skill not found"
+        )
+
+    delete_skill(db, skill)
+
+    return {"message": "Skill deleted successfully"}
