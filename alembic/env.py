@@ -6,6 +6,8 @@ from alembic import context
 from app.db.base import Base
 from app.models.user import User
 from app.models.workspace import Workspace
+from app.models.membership import Membership
+from app.models.project import Project
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
