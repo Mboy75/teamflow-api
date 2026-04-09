@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.skill import Skill
 from app.schemas.skill_schema import SkillCreate, SkillUpdate
+from app.models.project import Project
 
 
 def get_all_skills(db: Session):
@@ -49,3 +50,23 @@ def update_skill(db: Session, skill: Skill, skill_data: SkillUpdate):
 def delete_skill(db: Session, skill: Skill):
     db.delete(skill)
     db.commit()
+
+
+
+
+def add_skill_to_project(db, project: Project, skill: Skill):
+    if skill not in project.skills:
+        project.skills.append(skill)
+        db.commit()
+        db.refresh(project)
+
+    return project
+
+
+def remove_skill_from_project(db, project: Project, skill: Skill):
+    if skill in project.skills:
+        project.skills.remove(skill)
+        db.commit()
+        db.refresh(project)
+
+    return project    

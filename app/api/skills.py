@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
+from app.models.project import Project
 from app.db.session import get_db
 from app.schemas.skill_schema import SkillCreate, SkillUpdate, SkillResponse
 from app.services.skill_service import (
@@ -10,6 +10,8 @@ from app.services.skill_service import (
     create_skill,
     update_skill,
     delete_skill,
+    add_skill_to_project,
+    remove_skill_from_project,
 )
 
 router = APIRouter(prefix="/skills", tags=["Skills"])
@@ -85,3 +87,59 @@ def delete_existing_skill(skill_id: int, db: Session = Depends(get_db)):
     delete_skill(db, skill)
 
     return {"message": "Skill deleted successfully"}
+
+@router.post("/projects/{project_id}/skills/{skill_id}")
+def assign_skill_to_project(
+    project_id: int,
+    skill_id: int,
+    db: Session = Depends(get_db)
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    skill = get_skill_by_id(db, skill_id)
+
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    add_skill_to_project(db, project, skill)
+
+    return {
+        "message": f"Skill {skill.name} assigned to project {project.name}"
+    }
+
+@router.get("/projects/{project_id}/skills", response_model=list[SkillResponse])
+def get_project_skills(
+    project_id: int,
+    db: Session = Depends(get_db)
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return project.skills
+
+@router.delete("/projects/{project_id}/skills/{skill_id}")
+def unassign_skill_from_project(
+    project_id: int,
+    skill_id: int,
+    db: Session = Depends(get_db)
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    skill = get_skill_by_id(db, skill_id)
+
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    remove_skill_from_project(db, project, skill)
+
+    return {
+        "message": f"Skill {skill.name} removed from project {project.name}"
+    }
