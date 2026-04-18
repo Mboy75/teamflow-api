@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_current_user, get_db
 from app.schemas.project import ProjectCreate, ProjectResponse
 from app.services.project_service import create_project, get_workspace_projects
 from app.models.project import Project
+from app.schemas.project import ProjectWithSkills
+
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -34,6 +36,15 @@ def list_projects(
         workspace_id=workspace_id,
         current_user_id=current_user.id,
     )
+
+@router.get("/{project_id}/with-skills", response_model=ProjectWithSkills)
+def get_project_with_skills(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return project
 
 
 # temporary ro get project list without authentication and workspace filtering, to be used in the frontend until we implement the full project management features

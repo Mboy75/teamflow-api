@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from app.schemas.skill_schema import SkillSimple
+#from app.schemas.skill_schema import SkillSimple
+from app.schemas.skill_schema import SkillResponse
 
 
 class ProjectCreate(BaseModel):
@@ -16,7 +17,9 @@ class ProjectResponse(BaseModel):
         from_attributes = True
 
 class ProjectWithSkills(ProjectResponse):
-    skills: list[SkillSimple] = []
+    skills: list[SkillResponse] = []
 
     class Config:
-        from_attributes = True       
+        from_attributes = True
+
+    
