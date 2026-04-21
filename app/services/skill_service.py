@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.models.skill import Skill
 from app.schemas.skill_schema import SkillCreate, SkillUpdate
@@ -55,10 +56,15 @@ def delete_skill(db: Session, skill: Skill):
 
 
 def add_skill_to_project(db, project: Project, skill: Skill):
-    if skill not in project.skills:
-        project.skills.append(skill)
-        db.commit()
-        db.refresh(project)
+    if skill in project.skills:
+        raise HTTPException(
+            status_code=400,
+            detail="Skill already assigned to this project"
+        )
+
+    project.skills.append(skill)
+    db.commit()
+    db.refresh(project)
 
     return project
 
