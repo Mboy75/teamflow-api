@@ -5,8 +5,24 @@ from app.schemas.skill_schema import SkillCreate, SkillUpdate
 from app.models.project import Project
 
 
-def get_all_skills(db: Session):
-    return db.query(Skill).all()
+def get_all_skills(
+    db: Session,
+    category: str | None = None,
+    level: str | None = None,
+    search: str | None = None,
+):
+    query = db.query(Skill)
+
+    if category:
+        query = query.filter(Skill.category.ilike(category))
+
+    if level:
+        query = query.filter(Skill.level.ilike(level))
+
+    if search:
+        query = query.filter(Skill.name.ilike(f"%{search}%"))
+
+    return query.all()
 
 
 def get_skill_by_id(db: Session, skill_id: int):

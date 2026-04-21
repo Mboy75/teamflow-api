@@ -22,8 +22,18 @@ router = APIRouter(prefix="/skills", tags=["Skills"])
 
 
 @router.get("/", response_model=list[SkillResponse])
-def read_skills(db: Session = Depends(get_db)):
-    return get_all_skills(db)
+def read_skills(
+    category: str | None = None,
+    level: str | None = None,
+    search: str | None = None,
+    db: Session = Depends(get_db)
+):
+    return get_all_skills(
+        db,
+        category=category,
+        level=level,
+        search=search
+    )
 
 
 @router.get("/{skill_id}", response_model=SkillResponse)
