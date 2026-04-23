@@ -29,7 +29,9 @@ def read_skills(
     search: str | None = None,
     skip: int = 0,
     limit: int = Query(default=10, le=100),
-    db: Session = Depends(get_db),
+    sort_by: str | None = None,
+    order: str = "asc",
+    db: Session = Depends(get_db)
 ):
     return get_all_skills(
         db,
@@ -37,7 +39,9 @@ def read_skills(
         level=level,
         search=search,
         skip=skip,
-        limit=limit
+        limit=limit,
+        sort_by=sort_by,
+        order=order
     )
 
 

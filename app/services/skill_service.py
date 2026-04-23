@@ -12,6 +12,8 @@ def get_all_skills(
     search: str | None = None,
     skip: int = 0,
     limit: int = 10,
+    sort_by: str | None = None,
+    order: str = "asc",
 ):
     query = db.query(Skill)
 
@@ -23,6 +25,17 @@ def get_all_skills(
 
     if search:
         query = query.filter(Skill.name.ilike(f"%{search}%"))
+
+    if sort_by:
+        allowed_fields = ["name", "level", "category", "years_of_experience"]
+
+        if sort_by in allowed_fields:
+            column = getattr(Skill, sort_by)
+
+        if order == "desc":
+            query = query.order_by(column.desc())
+        else:
+            query = query.order_by(column.asc())
 
     return query.offset(skip).limit(limit).all()
 
