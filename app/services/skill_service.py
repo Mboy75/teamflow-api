@@ -10,6 +10,8 @@ def get_all_skills(
     category: str | None = None,
     level: str | None = None,
     search: str | None = None,
+    skip: int = 0,
+    limit: int = 10,
 ):
     query = db.query(Skill)
 
@@ -22,7 +24,7 @@ def get_all_skills(
     if search:
         query = query.filter(Skill.name.ilike(f"%{search}%"))
 
-    return query.all()
+    return query.offset(skip).limit(limit).all()
 
 
 def get_skill_by_id(db: Session, skill_id: int):

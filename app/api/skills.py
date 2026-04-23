@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.models.project import Project
 from app.db.session import get_db
@@ -18,6 +18,7 @@ from app.db.deps import get_current_user, get_db
 from app.models.user import User
 from app.db.deps import require_admin_or_owner
 
+
 router = APIRouter(prefix="/skills", tags=["Skills"])
 
 
@@ -26,13 +27,17 @@ def read_skills(
     category: str | None = None,
     level: str | None = None,
     search: str | None = None,
-    db: Session = Depends(get_db)
+    skip: int = 0,
+    limit: int = Query(default=10, le=100),
+    db: Session = Depends(get_db),
 ):
     return get_all_skills(
         db,
         category=category,
         level=level,
-        search=search
+        search=search,
+        skip=skip,
+        limit=limit
     )
 
 
