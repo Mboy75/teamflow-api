@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.models.project import Project
 from app.db.session import get_db
-from app.schemas.skill_schema import SkillCreate, SkillUpdate, SkillResponse
+from app.schemas.skill_schema import SkillCreate, SkillUpdate, SkillResponse, SkillListResponse
 from app.services.skill_service import (
     get_all_skills,
     get_skill_by_id,
@@ -22,7 +22,7 @@ from app.db.deps import require_admin_or_owner
 router = APIRouter(prefix="/skills", tags=["Skills"])
 
 
-@router.get("/", response_model=list[SkillResponse])
+@router.get("/", response_model=SkillListResponse)
 def read_skills(
     category: str | None = None,
     level: str | None = None,

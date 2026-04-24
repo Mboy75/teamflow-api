@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
-
+from typing import List
 
 class SkillBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=50)
@@ -32,4 +32,11 @@ class SkillSimple(BaseModel):
     name: str
 
     class Config:
-        from_attributes = True        
+        from_attributes = True     
+
+
+class SkillListResponse(BaseModel):
+    total: int
+    skip: int
+    limit: int
+    items: List[SkillResponse]           

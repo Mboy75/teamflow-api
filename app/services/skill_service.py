@@ -36,8 +36,14 @@ def get_all_skills(
             query = query.order_by(column.desc())
         else:
             query = query.order_by(column.asc())
-
-    return query.offset(skip).limit(limit).all()
+    total = query.count()
+    items = query.offset(skip).limit(limit).all()
+    return {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "items": items
+    }
 
 
 def get_skill_by_id(db: Session, skill_id: int):
