@@ -17,7 +17,7 @@ from app.services.skill_service import (
 from app.db.deps import get_current_user, get_db
 from app.models.user import User
 from app.db.deps import require_admin_or_owner
-
+from app.core.exceptions import NotFoundException
 
 router = APIRouter(prefix="/skills", tags=["Skills"])
 
@@ -50,10 +50,7 @@ def read_skill(skill_id: int, db: Session = Depends(get_db)):
     skill = get_skill_by_id(db, skill_id)
 
     if not skill:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Skill not found"
-        )
+        raise NotFoundException("Skill not found")
 
     return skill
 
@@ -67,10 +64,7 @@ def create_new_skill(
     existing_skill = get_skill_by_name(db, skill.name)
 
     if existing_skill:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Skill already exists"
-        )
+        raise NotFoundException("Skill not found")
 
     return create_skill(db, skill)
 
@@ -85,10 +79,7 @@ def update_existing_skill(
     skill = get_skill_by_id(db, skill_id)
 
     if not skill:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Skill not found"
-        )
+        raise NotFoundException("Skill not found")
 
     if skill_data.name is not None:
         existing_skill = get_skill_by_name(db, skill_data.name)
@@ -111,7 +102,7 @@ def delete_existing_skill(
     skill = get_skill_by_id(db, skill_id)
 
     if not skill:
-        raise HTTPException(status_code=404, detail="Skill not found")
+        raise NotFoundException("Skill not found")
 
     delete_skill(db, skill)
 
@@ -127,14 +118,14 @@ def assign_skill_to_project(
     project = db.query(Project).filter(Project.id == project_id).first()
 
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise NotFoundException("Skill not found")
     
     require_admin_or_owner(current_user, project.workspace_id, db)
 
     skill = get_skill_by_id(db, skill_id)
 
     if not skill:
-        raise HTTPException(status_code=404, detail="Skill not found")
+        raise NotFoundException("Skill not found")
 
     add_skill_to_project(db, project, skill)
 
@@ -150,7 +141,7 @@ def get_project_skills(
     project = db.query(Project).filter(Project.id == project_id).first()
 
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise NotFoundException("Skill not found")
 
     return project.skills
 
@@ -164,14 +155,14 @@ def unassign_skill_from_project(
     project = db.query(Project).filter(Project.id == project_id).first()
 
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise NotFoundException("Skill not found")
     
     require_admin_or_owner(current_user, project.workspace_id, db)
 
     skill = get_skill_by_id(db, skill_id)
 
     if not skill:
-        raise HTTPException(status_code=404, detail="Skill not found")
+        raise NotFoundException("Skill not found")
 
     remove_skill_from_project(db, project, skill)
 

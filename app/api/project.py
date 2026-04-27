@@ -7,6 +7,7 @@ from app.services.project_service import create_project, get_workspace_projects
 from app.models.project import Project
 from app.schemas.project import ProjectWithSkills
 from sqlalchemy.orm import joinedload
+from app.core.exceptions import NotFoundException
 
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
@@ -48,7 +49,7 @@ def get_project_with_skills(project_id: int, db: Session = Depends(get_db)):
     )
 
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise NotFoundException("Skill not found")
 
     return project
 
