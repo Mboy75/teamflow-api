@@ -20,19 +20,41 @@ engine = create_engine(
     connect_args={"check_same_thread": False}
 )
 
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=engine
+)
 
 
-def override_get_db():
-    db = TestingSessionLocal()
+@pytest.fixture()
+def db():
+    connection = engine.connect()
+    transaction = connection.begin()
+
+    session = TestingSessionLocal(bind=connection)
+
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()
+        transaction.rollback()
+        connection.close()
 
+#   CLIENT con override DB
 
-app.dependency_overrides[get_db] = override_get_db
+@pytest.fixture()
+def client(db):
+    def override_get_db():
+        try:
+            yield db
+        finally:
+            pass
 
+    app.dependency_overrides[get_db] = override_get_db
+    return TestClient(app)
+
+#   crea tabelle
 
 @pytest.fixture(scope="session", autouse=True)
 def create_test_db():
@@ -41,23 +63,12 @@ def create_test_db():
     Base.metadata.drop_all(bind=engine)
 
 
-@pytest.fixture()
-def client():
-    return TestClient(app)
-
 
 # 👤 USER
 @pytest.fixture()
-def test_user():
-    db = next(override_get_db())
-
-    user = db.query(User).filter(User.email == "test@example.com").first()
-
-    if user:
-        return user
-
+def test_user(db):
     user = User(
-        email="test@example.com",
+        email="massi7@test.com",
         full_name="Test User",
         hashed_password=hash_password("123456"),
         is_active=True,
@@ -87,9 +98,7 @@ def token(client, test_user):
 
 # 🏢 WORKSPACE
 @pytest.fixture()
-def test_workspace(test_user):
-    db = next(override_get_db())
-
+def test_workspace(db, test_user):
     workspace = Workspace(
         name="Test Workspace",
         slug="test-workspace",
@@ -105,9 +114,7 @@ def test_workspace(test_user):
 
 # 👥 MEMBERSHIP
 @pytest.fixture()
-def test_membership(test_user, test_workspace):
-    db = next(override_get_db())
-
+def test_membership(db, test_user, test_workspace):
     membership = Membership(
         user_id=test_user.id,
         workspace_id=test_workspace.id,
@@ -123,9 +130,7 @@ def test_membership(test_user, test_workspace):
 
 # 📦 PROJECT
 @pytest.fixture()
-def test_project(test_workspace, test_membership):
-    db = next(override_get_db())
-
+def test_project(db, test_workspace, test_membership):
     project = Project(
         name="Test Project",
         workspace_id=test_workspace.id
