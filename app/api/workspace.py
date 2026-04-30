@@ -7,6 +7,7 @@ from app.services.workspace_service import create_workspace, get_user_workspaces
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.models.membership import Membership
+from app.utils.permissions import get_workspace_membership
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
@@ -47,16 +48,11 @@ def get_workspace(
             detail="Workspace not found"
         )
 
-    membership = db.query(Membership).filter(
-        Membership.user_id == current_user.id,
-        Membership.workspace_id == workspace_id
-    ).first()
-
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a member of this workspace"
-        )
+    get_workspace_membership(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id
+    )
 
     return workspace
 
@@ -77,22 +73,12 @@ def delete_workspace(
             detail="Workspace not found"
         )
 
-    membership = db.query(Membership).filter(
-        Membership.user_id == current_user.id,
-        Membership.workspace_id == workspace_id
-    ).first()
-
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a member of this workspace"
-        )
-
-    if membership.role not in ["owner", "admin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to delete this workspace"
-        )
+    get_workspace_membership(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+        allowed_roles=["owner", "admin"]
+    )
 
     db.delete(workspace)
     db.commit()
