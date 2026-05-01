@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-
+from pydantic import Field
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "TeamFlow API"
@@ -9,7 +9,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     ALGORITHM: str = "HS256"
 
-    DATABASE_URL: str
+    DATABASE_URL: str = Field(
+        default="sqlite:///./test.db"
+    )
 
     class Config:
         env_file = ".env"
