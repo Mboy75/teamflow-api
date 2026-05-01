@@ -7,7 +7,8 @@ from app.services.workspace_service import create_workspace, get_user_workspaces
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.models.membership import Membership
-from app.utils.permissions import get_workspace_membership
+from app.utils.permissions import get_workspace_membership, require_workspace_member, require_workspace_owner_or_admin
+
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
@@ -38,7 +39,8 @@ def list_workspaces_endpoint(
 def get_workspace(
     workspace_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    membership = Depends(require_workspace_member)
 ):
     workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
 
@@ -63,7 +65,8 @@ def get_workspace(
 def delete_workspace(
     workspace_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    membership = Depends(require_workspace_owner_or_admin)
 ):
     workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
 
