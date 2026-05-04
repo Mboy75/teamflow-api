@@ -36,3 +36,9 @@ jobs:
           ACCESS_TOKEN_EXPIRE_MINUTES: 30
         run: |
           pytest -v
+
+
+env:
+  ENV: test
+  SECRET_KEY: testsecret
+  PYTHONPATH: .
