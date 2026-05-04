@@ -12,6 +12,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      ENV: test
+      SECRET_KEY: testsecret
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      PYTHONPATH: .
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,18 +34,6 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov httpx
 
-      - name: Run tests
-        env:
-          DATABASE_URL: sqlite:///./test.db
-          PYTHONPATH: .
-          SECRET_KEY: testsecret
-          ALGORITHM: HS256
-          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      - name: Run tests with coverage
         run: |
-          pytest -v
-
-
-env:
-  ENV: test
-  SECRET_KEY: testsecret
-  PYTHONPATH: .
+          pytest --cov=app --cov-report=term --cov-report=xml -v
