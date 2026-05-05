@@ -10,4 +10,4 @@ COPY . .
 
 RUN chmod +x entrypoint.sh
 
-CMD ["./entrypoint.sh"]
+CMD ["./entrypoint.sh"]git
