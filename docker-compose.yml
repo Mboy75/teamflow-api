@@ -3,6 +3,7 @@ version: "3.9"
 services:
   db:
     image: postgres:15
+    container_name: teamflow-db
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -15,16 +16,19 @@ services:
 
   web:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    volumes:
-      - .:/app
+    container_name: teamflow-api
+    command: ./entrypoint.sh
     ports:
       - "8000:8000"
     environment:
       ENV: dev
       DATABASE_URL: postgresql://postgres:postgres@db:5432/teamflow
       SECRET_KEY: supersecret
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
       PYTHONPATH: .
+    volumes:
+      - .:/app
     depends_on:
       - db
 

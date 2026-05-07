@@ -1,26 +1,24 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field, ConfigDict
-import os
-
+from pydantic import ConfigDict
 
 
 class Settings(BaseSettings):
-    #  Environment
+    # Environment
     ENV: str = "dev"  # dev | test | prod
 
-    #  App
+    # App
     PROJECT_NAME: str = "TeamFlow API"
     DEBUG: bool = True
 
-    #  Security
+    # Security
     SECRET_KEY: str = "supersecretkey"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     ALGORITHM: str = "HS256"
 
-    #  Database
+    # Database
     DATABASE_URL: str | None = None
 
-    #  Pydantic v2 config
+    # Pydantic v2 config
     model_config = ConfigDict(
         env_file=".env",
         extra="ignore"
@@ -30,14 +28,14 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
-def get_database_url():
-    #  TEST → SQLite
+def get_database_url() -> str:
     if settings.ENV == "test":
         return "sqlite:///./test.db"
 
-    #  Docker / prod
     if settings.DATABASE_URL:
         return settings.DATABASE_URL
 
-    #  fallback locale
     return "sqlite:///./dev.db"
+
+
+DATABASE_URL = get_database_url()
