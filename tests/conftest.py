@@ -11,6 +11,9 @@ from app.models.workspace import Workspace
 from app.models.membership import Membership
 from app.models.project import Project
 from app.core.security import hash_password
+import os
+
+os.environ["ENV"] = "test"
 
 # SQLite in-memory
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"

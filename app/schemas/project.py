@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 #from app.schemas.skill_schema import SkillSimple
 from app.schemas.skill_schema import SkillResponse
 
@@ -19,7 +19,6 @@ class ProjectResponse(BaseModel):
 class ProjectWithSkills(ProjectResponse):
     skills: list[SkillResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
     

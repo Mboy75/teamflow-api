@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from typing import List
 
@@ -23,16 +23,14 @@ class SkillUpdate(BaseModel):
 class SkillResponse(SkillBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SkillSimple(BaseModel):
     id: int
     name: str
 
-    class Config:
-        from_attributes = True     
+    model_config = ConfigDict(from_attributes=True)    
 
 
 class SkillListResponse(BaseModel):
