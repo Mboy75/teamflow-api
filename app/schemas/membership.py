@@ -9,3 +9,7 @@ class MembershipResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class WorkspaceInvite(BaseModel):
+    email: str
+    role: str = "member"        
