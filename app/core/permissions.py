@@ -1,10 +1,10 @@
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.base import get_db
+from app.db.deps import get_db, get_current_user
 from app.models.membership import Membership
 from app.models.user import User
-from app.db.deps import get_current_user
+
 
 
 def require_workspace_role(allowed_roles: list[str]):
@@ -37,3 +37,13 @@ def require_workspace_role(allowed_roles: list[str]):
         return membership
 
     return role_checker
+
+# Predefined dependencies for common role checks
+
+WorkspaceOwner = Depends(require_workspace_role(["owner"]))
+
+WorkspaceAdmin = Depends(require_workspace_role(["owner", "admin"]))
+
+WorkspaceMember = Depends(
+    require_workspace_role(["owner", "admin", "member", "viewer"])
+)

@@ -2,12 +2,23 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db, get_current_user
+
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.models.membership import Membership
-from app.schemas.workspace import WorkspaceCreate, WorkspaceResponse
-from app.core.permissions import require_workspace_role
+
+from app.schemas.workspace import (
+    WorkspaceCreate,
+    WorkspaceResponse
+)
+
 from app.schemas.membership import WorkspaceInvite
+
+from app.core.permissions import (
+    WorkspaceOwner,
+    WorkspaceAdmin,
+    WorkspaceMember,
+)
 
 router = APIRouter(
     prefix="/workspaces",
@@ -15,6 +26,9 @@ router = APIRouter(
 )
 
 
+# =========================
+# LIST WORKSPACES
+# =========================
 @router.get("/", response_model=list[WorkspaceResponse])
 def list_workspaces(
     db: Session = Depends(get_db),
@@ -26,16 +40,28 @@ def list_workspaces(
         .all()
     )
 
-    workspace_ids = [membership.workspace_id for membership in memberships]
+    workspace_ids = [
+        membership.workspace_id
+        for membership in memberships
+    ]
 
-    return (
+    workspaces = (
         db.query(Workspace)
         .filter(Workspace.id.in_(workspace_ids))
         .all()
     )
 
+    return workspaces
 
-@router.post("/", response_model=WorkspaceResponse, status_code=status.HTTP_201_CREATED)
+
+# =========================
+# CREATE WORKSPACE
+# =========================
+@router.post(
+    "/",
+    response_model=WorkspaceResponse,
+    status_code=status.HTTP_201_CREATED
+)
 def create_workspace(
     workspace_data: WorkspaceCreate,
     db: Session = Depends(get_db),
@@ -51,24 +77,30 @@ def create_workspace(
     db.commit()
     db.refresh(workspace)
 
-    membership = Membership(
+    owner_membership = Membership(
         user_id=current_user.id,
         workspace_id=workspace.id,
         role="owner"
     )
 
-    db.add(membership)
+    db.add(owner_membership)
     db.commit()
 
     return workspace
 
 
-@router.get("/{workspace_id}", response_model=WorkspaceResponse)
+# =========================
+# GET WORKSPACE
+# =========================
+@router.get(
+    "/{workspace_id}",
+    response_model=WorkspaceResponse
+)
 def get_workspace(
     workspace_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    membership: Membership = Depends(require_workspace_role(["owner", "admin", "member", "viewer"]))
+    membership: Membership = WorkspaceMember
 ):
     workspace = (
         db.query(Workspace)
@@ -85,40 +117,22 @@ def get_workspace(
     return workspace
 
 
-@router.delete("/{workspace_id}")
-def delete_workspace(
-    workspace_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    membership: Membership = Depends(require_workspace_role(["owner"]))
-):
-    workspace = (
-        db.query(Workspace)
-        .filter(Workspace.id == workspace_id)
-        .first()
-    )
-
-    if not workspace:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found"
-        )
-
-    db.delete(workspace)
-    db.commit()
-
-    return {"message": "Workspace deleted successfully"}
-
-
+# =========================
+# INVITE USER
+# =========================
 @router.post("/{workspace_id}/invite")
 def invite_user_to_workspace(
     workspace_id: int,
     invite_data: WorkspaceInvite,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    membership: Membership = Depends(require_workspace_role(["owner", "admin"]))
+    membership: Membership = WorkspaceAdmin
 ):
-    workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    workspace = (
+        db.query(Workspace)
+        .filter(Workspace.id == workspace_id)
+        .first()
+    )
 
     if not workspace:
         raise HTTPException(
@@ -126,7 +140,11 @@ def invite_user_to_workspace(
             detail="Workspace not found"
         )
 
-    user = db.query(User).filter(User.email == invite_data.email).first()
+    user = (
+        db.query(User)
+        .filter(User.email == invite_data.email)
+        .first()
+    )
 
     if not user:
         raise HTTPException(
@@ -134,16 +152,24 @@ def invite_user_to_workspace(
             detail="User with this email not found"
         )
 
-    if invite_data.role not in ["admin", "member", "viewer"]:
+    if invite_data.role not in [
+        "admin",
+        "member",
+        "viewer"
+    ]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid role"
         )
 
-    existing_membership = db.query(Membership).filter(
-        Membership.user_id == user.id,
-        Membership.workspace_id == workspace_id
-    ).first()
+    existing_membership = (
+        db.query(Membership)
+        .filter(
+            Membership.user_id == user.id,
+            Membership.workspace_id == workspace_id
+        )
+        .first()
+    )
 
     if existing_membership:
         raise HTTPException(
@@ -166,4 +192,34 @@ def invite_user_to_workspace(
         "workspace_id": workspace_id,
         "user_id": user.id,
         "role": new_membership.role
+    }
+
+
+# =========================
+# DELETE WORKSPACE
+# =========================
+@router.delete("/{workspace_id}")
+def delete_workspace(
+    workspace_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    membership: Membership = WorkspaceOwner
+):
+    workspace = (
+        db.query(Workspace)
+        .filter(Workspace.id == workspace_id)
+        .first()
+    )
+
+    if not workspace:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found"
+        )
+
+    db.delete(workspace)
+    db.commit()
+
+    return {
+        "message": "Workspace deleted successfully"
     }
