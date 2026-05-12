@@ -1,3 +1,6 @@
+from datetime import datetime
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -6,19 +9,21 @@ from app.db.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.models.membership import Membership
+from app.models.workspace_invitation import WorkspaceInvitation
 
-from app.schemas.workspace import (
-    WorkspaceCreate,
-    WorkspaceResponse
+from app.schemas.workspace import WorkspaceCreate, WorkspaceResponse
+from app.schemas.membership import (
+    WorkspaceInvite,
+    WorkspaceInvitationCreate,
+    WorkspaceInvitationResponse,
 )
-
-from app.schemas.membership import WorkspaceInvite
 
 from app.core.permissions import (
     WorkspaceOwner,
     WorkspaceAdmin,
     WorkspaceMember,
 )
+
 
 router = APIRouter(
     prefix="/workspaces",
@@ -222,4 +227,111 @@ def delete_workspace(
 
     return {
         "message": "Workspace deleted successfully"
+    }
+
+
+
+@router.post(
+    "/{workspace_id}/invitations",
+    response_model=WorkspaceInvitationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_workspace_invitation(
+    workspace_id: int,
+    invite_data: WorkspaceInvitationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    membership: Membership = WorkspaceAdmin,
+):
+    if invite_data.role not in ["admin", "member", "viewer"]:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    existing_invitation = (
+        db.query(WorkspaceInvitation)
+        .filter(
+            WorkspaceInvitation.workspace_id == workspace_id,
+            WorkspaceInvitation.email == invite_data.email,
+            WorkspaceInvitation.is_accepted == False,
+        )
+        .first()
+    )
+
+    if existing_invitation:
+        raise HTTPException(status_code=400, detail="Pending invitation already exists")
+
+    token = secrets.token_urlsafe(32)
+
+    invitation = WorkspaceInvitation(
+        workspace_id=workspace_id,
+        invited_by_user_id=current_user.id,
+        email=invite_data.email,
+        role=invite_data.role,
+        token=token,
+    )
+
+    db.add(invitation)
+    db.commit()
+    db.refresh(invitation)
+
+    invite_link = f"http://localhost:8000/workspaces/invitations/accept/{token}"
+
+    return invitation
+
+
+
+@router.post("/invitations/accept/{token}")
+def accept_workspace_invitation(
+    token: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    invitation = (
+        db.query(WorkspaceInvitation)
+        .filter(WorkspaceInvitation.token == token)
+        .first()
+    )
+
+    if not invitation:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+    if invitation.is_accepted:
+        raise HTTPException(status_code=400, detail="Invitation already accepted")
+
+    if invitation.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invitation expired")
+
+    if invitation.email != current_user.email:
+        raise HTTPException(status_code=403, detail="This invitation is not for your account")
+
+    existing_membership = (
+        db.query(Membership)
+        .filter(
+            Membership.workspace_id == invitation.workspace_id,
+            Membership.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if existing_membership:
+        raise HTTPException(status_code=400, detail="User is already a member")
+
+    membership = Membership(
+        workspace_id=invitation.workspace_id,
+        user_id=current_user.id,
+        role=invitation.role,
+    )
+
+    invitation.is_accepted = True
+
+    db.add(membership)
+    db.commit()
+
+    return {
+        "message": "Invitation accepted successfully",
+        "workspace_id": invitation.workspace_id,
+        "role": invitation.role,
     }

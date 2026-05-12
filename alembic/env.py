@@ -14,6 +14,8 @@ from app.models.project import Project
 from app.models.skill import Skill
 from app.models.task import Task
 from app.models.project_skill import project_skills
+from app.models.workspace_invitation import WorkspaceInvitation 
+
 
 # Alembic config
 config = context.config

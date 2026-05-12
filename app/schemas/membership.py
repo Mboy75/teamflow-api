@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class MembershipResponse(BaseModel):
@@ -9,6 +9,23 @@ class MembershipResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class WorkspaceInvite(BaseModel):
-    email: str
-    role: str = "member"        
+    email: EmailStr
+    role: str = "member"
+
+
+class WorkspaceInvitationCreate(BaseModel):
+    email: EmailStr
+    role: str = "member"
+
+
+class WorkspaceInvitationResponse(BaseModel):
+    id: int
+    workspace_id: int
+    email: EmailStr
+    role: str
+    token: str
+    is_accepted: bool
+
+    model_config = ConfigDict(from_attributes=True)     
